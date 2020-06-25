@@ -17,7 +17,7 @@ class SpecEditorHeader extends React.PureComponent<Props> {
         <ul className="tabs-nav">
           <li
             className={this.props.sidePaneItem === SIDEPANE.Editor ? 'active-tab' : undefined}
-            onClick={e => {
+            onClick={(e) => {
               if (this.props.sidePaneItem === SIDEPANE.Editor) {
                 e.stopPropagation();
               }
@@ -30,7 +30,7 @@ class SpecEditorHeader extends React.PureComponent<Props> {
 
           <li
             className={this.props.sidePaneItem === SIDEPANE.Config ? 'active-tab' : undefined}
-            onClick={e => {
+            onClick={(e) => {
               if (this.props.sidePaneItem === SIDEPANE.Config) {
                 e.stopPropagation();
               }
@@ -57,30 +57,17 @@ function mapStateToProps(state: State) {
     mode: state.mode,
     sidePaneItem: state.sidePaneItem,
     themeName: state.themeName,
-    value: state.vegaSpec
+    value: state.vegaSpec,
   };
 }
 
 export function mapDispatchToProps(dispatch: Dispatch<EditorActions.Action>) {
   return bindActionCreators(
     {
-      clearConfig: EditorActions.clearConfig,
-      parseSpec: EditorActions.parseSpec,
-      setConfig: EditorActions.setConfig,
-      setConfigEditorString: EditorActions.setConfigEditorString,
       setSidePaneItem: EditorActions.setSidePaneItem,
-      setThemeName: EditorActions.setThemeName,
-      toggleCompiledVegaSpec: EditorActions.toggleCompiledVegaSpec,
-      updateEditorString: EditorActions.updateEditorString,
-      updateVegaSpec: EditorActions.updateVegaSpec
     },
     dispatch
   );
 }
 
-export default withRouter(
-  connect(
-    mapStateToProps,
-    mapDispatchToProps
-  )(SpecEditorHeader)
-);
+export default withRouter(connect(mapStateToProps, mapDispatchToProps)(SpecEditorHeader));

@@ -5,9 +5,10 @@ import {connect} from 'react-redux';
 import {RouteComponentProps, withRouter} from 'react-router-dom';
 import {bindActionCreators, Dispatch} from 'redux';
 import * as EditorActions from '../../../actions/editor';
+import {State} from '../../../constants/default-state';
 
 const toggleStyle = {
-  cursor: 'pointer'
+  cursor: 'pointer',
 };
 
 type Props = ReturnType<typeof mapStateToProps> & ReturnType<typeof mapDispatchToProps> & RouteComponentProps;
@@ -28,7 +29,7 @@ class CompiledSpecDisplayHeader extends React.PureComponent<Props> {
   public render() {
     if (this.props.compiledVegaSpec) {
       const toggleStyleUp = Object.assign({}, toggleStyle, {
-        position: 'static'
+        position: 'static',
       });
       return (
         <div className="editor-header" style={toggleStyleUp} onClick={this.props.toggleCompiledVegaSpec}>
@@ -44,11 +45,6 @@ class CompiledSpecDisplayHeader extends React.PureComponent<Props> {
       return (
         <div onClick={this.props.toggleCompiledVegaSpec} className="editor-header" style={toggleStyle}>
           <span>Compiled Vega</span>
-
-          <button onClick={this.editVegaSpec} style={{zIndex: -1, opacity: 0, cursor: 'pointer'}}>
-            Edit Vega Spec
-          </button>
-
           <ChevronUp />
         </div>
       );
@@ -56,10 +52,10 @@ class CompiledSpecDisplayHeader extends React.PureComponent<Props> {
   }
 }
 
-function mapStateToProps(state, ownProps) {
+function mapStateToProps(state: State) {
   return {
     compiledVegaSpec: state.compiledVegaSpec,
-    value: state.vegaSpec
+    value: state.vegaSpec,
   };
 }
 
@@ -68,15 +64,10 @@ export function mapDispatchToProps(dispatch: Dispatch<EditorActions.Action>) {
     {
       clearConfig: EditorActions.clearConfig,
       toggleCompiledVegaSpec: EditorActions.toggleCompiledVegaSpec,
-      updateVegaSpec: EditorActions.updateVegaSpec
+      updateVegaSpec: EditorActions.updateVegaSpec,
     },
     dispatch
   );
 }
 
-export default withRouter(
-  connect(
-    mapStateToProps,
-    mapDispatchToProps
-  )(CompiledSpecDisplayHeader)
-);
+export default withRouter(connect(mapStateToProps, mapDispatchToProps)(CompiledSpecDisplayHeader));

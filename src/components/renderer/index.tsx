@@ -16,20 +16,18 @@ export function mapStateToProps(state: State) {
     tooltipEnable: state.tooltipEnable,
     vegaLiteSpec: state.vegaLiteSpec,
     vegaSpec: state.vegaSpec,
-    view: state.view
+    view: state.view,
+    backgroundColor: state.backgroundColor,
   };
 }
 
 export function mapDispatchToProps(dispatch: Dispatch<EditorActions.Action>) {
   return bindActionCreators(
     {
-      setView: EditorActions.setView
+      setView: EditorActions.setView,
     },
     dispatch
   );
 }
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(Renderer);
+export default connect(mapStateToProps, mapDispatchToProps)(Renderer);

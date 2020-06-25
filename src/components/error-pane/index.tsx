@@ -6,7 +6,10 @@ import Renderer from './renderer';
 export function mapStateToProps(state: State) {
   return {
     error: state.error,
-    warningsLogger: state.warningsLogger
+    errors: state.errors,
+    warns: state.warns,
+    debugs: state.debugs,
+    infos: state.infos,
   };
 }
 

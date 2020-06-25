@@ -1,69 +1,15 @@
 .gist-split {
   display: flex;
+  flex-wrap: wrap;
+}
+
+.gist-split > div {
+  flex: 1;
 }
 
 .personal-gist {
-  flex: 1;
-}
-
-.load-gist {
-  flex: 1;
-}
-
-.privacy-toggle {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.privacy-toggle > input {
-  margin: 0 4px 0 0;
-}
-
-.gist-container {
-  margin-bottom: 1em;
-  font-size: 0.9em;
-}
-
-.personal-gist-description {
-  display: flex;
-  align-items: center;
-}
-
-.text {
-  margin-left: 8px;
-  font-weight: bold;
-}
-
-.play-down {
-  color: #999999;
-}
-
-.personal-gist-files {
-  display: flex;
-  flex-direction: column;
-}
-
-.file {
-  display: flex;
-}
-
-.arrow {
-  margin: 4px;
-  width: 15px;
-  border-bottom: 1px solid black;
-  border-left: 1px solid black;
-}
-
-.filename {
-  font-family: monospace;
-  cursor: pointer;
-  margin-top: 4px;
-  color: #4f4f4f;
-}
-
-.filename:hover {
-  color: #000000;
+  min-width: 50%;
+  padding-right: 2em;
 }
 
 .gist-text {
@@ -75,10 +21,12 @@
 .gist-url {
   font-size: 12px;
   font-style: italic;
-  color: rgb(6, 69, 173);
+  color: var(--url-color);
+  word-break: break-all;
 }
 
 .gist-input-container {
+  min-width: 150px;
   margin-top: 20px;
 }
 
@@ -98,14 +46,6 @@
 
 .gist-input-container input:checked + label {
   text-decoration: underline;
-}
-
-.loader-container {
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  height: 30%;
-  font-size: 20px;
 }
 
 .gist-input {
@@ -155,6 +95,7 @@
 .preview-error-message-container {
   display: flex;
   flex-direction: column;
+  margin-bottom: 10px;
 }
 
 .preview-error-message {

@@ -9,27 +9,25 @@ import Renderer from '../renderer';
 import SignalViewer from '../signal-viewer';
 import DebugPaneHeader from './debug-pane-header';
 import './index.css';
-import {version as VG_VERISION} from 'vega';
+import {version as VG_VERSION} from 'vega';
 import {version as VL_VERSION} from 'vega-lite';
 import {version as TOOLTIP_VERSION} from 'vega-tooltip';
 const pjson = require('../../../package.json');
 
-interface State {
-  header: string;
-  range: number;
-  maxRange: number;
-}
+const defaultState = {
+  header: '',
+  maxRange: 0,
+  range: 0,
+};
+
+type State = Readonly<typeof defaultState>;
 
 type Props = ReturnType<typeof mapStateToProps> & ReturnType<typeof mapDispatchToProps>;
 
 export default class VizPane extends React.PureComponent<Props, State> {
   constructor(props) {
     super(props);
-    this.state = {
-      header: '',
-      maxRange: 0,
-      range: 0
-    };
+    this.state = defaultState;
     this.handleChange = this.handleChange.bind(this);
     this.getContextViewer = this.getContextViewer.bind(this);
   }
@@ -53,10 +51,10 @@ export default class VizPane extends React.PureComponent<Props, State> {
 
     const decorations = editor.deltaDecorations(
       [],
-      rangeValue.map(match => {
+      rangeValue.map((match) => {
         return {
           options: {inlineClassName: 'myInlineDecoration'},
-          range: match.range
+          range: match.range,
         };
       })
     );
@@ -66,6 +64,7 @@ export default class VizPane extends React.PureComponent<Props, State> {
     if (rangeValue[0]) {
       editor.revealRangeInCenter(rangeValue[0].range);
       editor.focus();
+      editor.layout();
       setImmediate(() => {
         (document.activeElement as HTMLElement).blur();
       });
@@ -81,7 +80,7 @@ export default class VizPane extends React.PureComponent<Props, State> {
     if (this.props.debugPaneSize === LAYOUT.MinPaneSize) {
       this.props.setDebugPaneSize(LAYOUT.DebugPaneSize);
     }
-    if (this.props.error) {
+    if (this.props.error || this.props.errors.length) {
       this.props.showLogs(true);
     }
   }
@@ -96,9 +95,9 @@ export default class VizPane extends React.PureComponent<Props, State> {
     if (this.props.view) {
       switch (this.props.navItem) {
         case NAVBAR.DataViewer:
-          return <DataViewer onClickHandler={header => this.onClickHandler(header)} />;
+          return <DataViewer onClickHandler={(header) => this.onClickHandler(header)} />;
         case NAVBAR.SignalViewer:
-          return <SignalViewer onClickHandler={header => this.onClickHandler(header)} />;
+          return <SignalViewer onClickHandler={(header) => this.onClickHandler(header)} />;
         default:
           return null;
       }
@@ -106,32 +105,31 @@ export default class VizPane extends React.PureComponent<Props, State> {
       return null;
     }
   }
+
   public render() {
-    const debugPane = this.refs.debugPane as any;
-    if (debugPane) {
-      debugPane.pane2.style.height = this.props.debugPane
-        ? (this.props.debugPaneSize || window.innerHeight * 0.4) + 'px'
-        : LAYOUT.MinPaneSize + 'px';
-    }
     const container = (
       <div className="chart-container">
         <ErrorBoundary>
           <Renderer />
         </ErrorBoundary>
         <div className="versions">
-          Vega {VG_VERISION}, Vega-Lite {VL_VERSION}, Vega-Tooltip {TOOLTIP_VERSION}, Editor {pjson.version}
+          Vega {VG_VERSION}, Vega-Lite {VL_VERSION}, Vega-Tooltip {TOOLTIP_VERSION}, Editor {pjson.version}
         </div>
       </div>
     );
     return (
       <SplitPane
-        ref="debugPane"
         split="horizontal"
         primary="second"
         minSize={LAYOUT.MinPaneSize}
         defaultSize={this.props.debugPane ? this.props.debugPaneSize : LAYOUT.MinPaneSize}
         onChange={this.handleChange}
         pane1Style={{minHeight: `${LAYOUT.MinPaneSize}px`}}
+        pane2Style={{
+          height: this.props.debugPane
+            ? (this.props.debugPaneSize || window.innerHeight * 0.4) + 'px'
+            : LAYOUT.MinPaneSize + 'px',
+        }}
         paneStyle={{display: 'flex'}}
         onDragStarted={() => {
           if (this.props.navItem === NAVBAR.Logs) {

@@ -7,8 +7,26 @@ import './index.css';
  */
 const SIZE_THRESHOLD = 1000;
 
+const LEVEL_NAMES = {
+  0: 'None',
+  1: 'Error',
+  2: 'Warn',
+  3: 'Info',
+  4: 'Debug',
+};
+
+const LOG_OPTIONS = [
+  {label: LEVEL_NAMES[0], value: 0},
+  {label: LEVEL_NAMES[1], value: 1},
+  {label: LEVEL_NAMES[2], value: 2},
+  {label: LEVEL_NAMES[3], value: 3},
+  {label: LEVEL_NAMES[4], value: 4},
+];
+
+const HOVER_OPTIONS = [{label: 'Auto'}, {label: 'On'}, {label: 'Off'}];
+
 class Sidebar extends Component<any, any> {
-  private listnerAttached = false;
+  private listenerAttached = false;
   public constructor(props) {
     super(props);
     this.handleOutsideClick = this.handleOutsideClick.bind(this);
@@ -16,18 +34,18 @@ class Sidebar extends Component<any, any> {
     this.setHover = this.setHover.bind(this);
   }
   public componentDidMount() {
-    // add click event listner depending on the screen size
+    // add click event listener depending on the screen size
     document.body.addEventListener('click', this.handleOutsideClick, true);
 
-    // add escape event listner depending on the screen size
+    // add escape event listener depending on the screen size
     window.addEventListener('keydown', this.handleEscClick, true);
 
     // remove or add event listeners if the window is resized;
     window.addEventListener('resize', () => {
-      if (this.listnerAttached && window.innerWidth > SIZE_THRESHOLD) {
+      if (this.listenerAttached && window.innerWidth > SIZE_THRESHOLD) {
         document.body.removeEventListener('click', this.handleOutsideClick, true);
       }
-      if (!this.listnerAttached && window.innerWidth <= SIZE_THRESHOLD) {
+      if (!this.listenerAttached && window.innerWidth <= SIZE_THRESHOLD) {
         document.body.addEventListener('click', this.handleOutsideClick, true);
       }
     });
@@ -43,7 +61,7 @@ class Sidebar extends Component<any, any> {
   }
 
   public handleOutsideClick(event) {
-    if (!this.listnerAttached && window.innerWidth <= SIZE_THRESHOLD) {
+    if (!this.listenerAttached && window.innerWidth <= SIZE_THRESHOLD) {
       const target: any = event.target;
       if (
         target.closest('.settings') ||
@@ -54,46 +72,50 @@ class Sidebar extends Component<any, any> {
         return;
       }
       this.props.setSettingsState(false);
-      this.listnerAttached = true;
+      this.listenerAttached = true;
     }
   }
 
-  public logOptions = () => {
-    let options = [{label: 'None'}, {label: 'Warn'}, {label: 'Info'}, {label: 'Debug'}];
-    options = options.filter(o => o.label !== this.props.logLevel);
-    return options;
-  };
-
-  public hoverOptions = () => {
-    let options = [{label: 'auto'}, {label: 'on'}, {label: 'off'}];
-    const selected =
-      typeof this.props.hoverEnable !== 'boolean' ? this.props.hoverEnable : this.props.hoverEnable ? 'on' : 'off';
-    options = options.filter(o => o.label !== selected);
-    return options;
-  };
-
   public setHover(e) {
-    let newHover: boolean | 'auto' = 'auto';
+    let newHover = null;
     switch (e.label) {
-      case 'on':
+      case 'On':
         newHover = true;
         break;
-      case 'off':
+      case 'Off':
         newHover = false;
+        break;
+      case 'Auto':
+        newHover = 'auto';
     }
     this.props.setHover(newHover);
   }
-  public render() {
-    const hover = typeof this.props.hoverEnable !== 'boolean' ? 'auto' : this.props.hoverEnable ? 'on' : 'off';
 
-    const renderers = [{value: 'svg', label: 'SVG'}, {value: 'canvas', label: 'Canvas'}].map(d => (
+  public render() {
+    const {
+      logLevel,
+      renderer,
+      setRenderer,
+      setBackgroundColor,
+      backgroundColor,
+      setLogLevel,
+      setTooltip,
+      tooltipEnable,
+    } = this.props;
+
+    const hover = typeof this.props.hoverEnable !== 'boolean' ? 'Auto' : this.props.hoverEnable ? 'On' : 'Off';
+
+    const renderers = [
+      {value: 'svg', label: 'SVG'},
+      {value: 'canvas', label: 'Canvas'},
+    ].map((d) => (
       <label key={d.label}>
         <input
           type="radio"
           name="renderer"
           value={d.value}
-          defaultChecked={this.props.renderer === d.value}
-          onClick={e => this.props.setRenderer(e.currentTarget.value)}
+          defaultChecked={renderer === d.value}
+          onClick={(e) => setRenderer(e.currentTarget.value)}
         />
         {d.label}
       </label>
@@ -109,14 +131,27 @@ class Sidebar extends Component<any, any> {
           Set Vega renderer. Canvas creates pixel graphics. SVG creates vector graphics.
         </p>
         <div className="select-container">
+          <span>Background Color:</span>
+          <div>
+            <input
+              type="color"
+              id="head"
+              name="head"
+              defaultValue={backgroundColor}
+              onInput={(e) => setBackgroundColor((e.target as HTMLTextAreaElement).value)}
+            />
+          </div>
+        </div>
+        <p className="settings-description">Background color of the visualization panel.</p>
+        <div className="select-container">
           <span>Log Level:</span>
           <div>
             <Select
               className="log-level-dropdown-wrapper"
               classNamePrefix="log-level-dropdown"
-              value={{label: this.props.logLevel}}
-              options={this.logOptions()}
-              onChange={e => this.props.setLogLevel(e.label)}
+              value={{value: logLevel, label: LEVEL_NAMES[logLevel]}}
+              options={LOG_OPTIONS}
+              onChange={(e: any) => setLogLevel(e.value)}
               isClearable={false}
               isSearchable={false}
             />
@@ -130,7 +165,7 @@ class Sidebar extends Component<any, any> {
               className="hover-enable-dropdown-wrapper"
               classNamePrefix="hover-enable-dropdown"
               value={{label: hover}}
-              options={this.hoverOptions()}
+              options={HOVER_OPTIONS}
               onChange={this.setHover}
               isClearable={false}
               isSearchable={false}
@@ -138,17 +173,20 @@ class Sidebar extends Component<any, any> {
           </div>
         </div>
         <p className="settings-description">
-          Enable or disable <a href="https://vega.github.io/vega/docs/api/view/#view_hover">hover</a> event processing.
-          In auto mode, Vega-Lite disables hover event processing.
+          Enable or disable{' '}
+          <a href="https://vega.github.io/vega/docs/api/view/#view_hover" target="_blank" rel="noopener noreferrer">
+            hover
+          </a>{' '}
+          event processing. In auto mode, Vega-Lite disables hover event processing.
         </p>
         <div className="tooltips">
           <label>
             <input
-              onChange={e => this.props.setTooltip(e.target.checked)}
+              onChange={(e) => setTooltip(e.target.checked)}
               type="checkbox"
               name=""
               id="tooltip"
-              checked={this.props.tooltipEnable}
+              checked={tooltipEnable}
             />
             Tooltips
           </label>

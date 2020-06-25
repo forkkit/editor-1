@@ -1,4 +1,4 @@
-export default function(cname) {
+export default function (cname) {
   const name = cname + '=';
   const decodedCookie = decodeURIComponent(document.cookie);
   const ca = decodedCookie.split(';');

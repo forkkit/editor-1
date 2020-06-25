@@ -1,6 +1,6 @@
 import React from 'react';
 import {AlertCircle, Slack, Twitter} from 'react-feather';
-import {version as VG_VERISION} from 'vega';
+import {version as VG_VERSION} from 'vega';
 import {version as VL_VERSION} from 'vega-lite';
 import {version as TOOLTIP_VERSION} from 'vega-tooltip';
 import isMac from '../../../utils/isMac';
@@ -20,7 +20,7 @@ const keyBoardShortcuts = shortcuts.map((shortcut, i) => {
     <li key={i}>
       {(isMac() ? shortcut.mac : shortcut.windows)
         .split(' ')
-        .map(key => (key === '+' ? '+' : <kbd key={`${key}${i}`}>{key}</kbd>))}
+        .map((key) => (key === '+' ? '+' : <kbd key={`${key}${i}`}>{key}</kbd>))}
       : {shortcut.text}
     </li>
   );
@@ -29,14 +29,18 @@ const keyBoardShortcuts = shortcuts.map((shortcut, i) => {
 const HelpModal = () => {
   return (
     <div className="help-modal">
-      <h1 className="modal-header">Help</h1>
+      <h1>Help</h1>
       <h2>References</h2>
-      <a href="https://vega.github.io/vega-lite/" target="_blank" rel="noopener noreferrer" className="doc-link">
-        Vega-Lite Docs
-      </a>
-      <a href="https://vega.github.io/vega/" target="_blank" rel="noopener noreferrer" className="doc-link">
-        Vega Docs
-      </a>
+      <div className="doc-link">
+        <a href="https://vega.github.io/vega-lite/" target="_blank" rel="noopener noreferrer">
+          Vega-Lite Docs
+        </a>
+      </div>
+      <div className="doc-link">
+        <a href="https://vega.github.io/vega/" target="_blank" rel="noopener noreferrer">
+          Vega Docs
+        </a>
+      </div>
       <h2>Keyboard Shortcuts</h2>
       <ul className="keyboard-shortcuts">{keyBoardShortcuts}</ul>
       <p>
@@ -63,12 +67,15 @@ const HelpModal = () => {
       </a>
       <h2>Tip</h2>
       <p>
-        You can access Vega, Vega-Lite, and the <a href="https://vega.github.io/vega/docs/api/view/"> Vega view</a> at{' '}
-        <code>(VEGA_DEBUG)</code> using your browser's developer console.
+        You can access Vega, Vega-Lite, and the{' '}
+        <a href="https://vega.github.io/vega/docs/api/view/" target="_blank" rel="noopener noreferrer">
+          Vega view
+        </a>{' '}
+        at <code>(VEGA_DEBUG)</code> using your browser's developer console.
       </p>
       <h2>Versions</h2>
       <ul>
-        <li>Vega: {VG_VERISION}</li>
+        <li>Vega: {VG_VERSION}</li>
         <li>Vega-Lite: {VL_VERSION}</li>
         <li>Vega-Tooltip: {TOOLTIP_VERSION}</li>
         <li>Editor: {pjson.version}</li>

@@ -1,9 +1,8 @@
 import * as Monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import {Renderers, Spec} from 'vega';
-import {Config} from 'vega-embed';
+import {Config, vega} from 'vega-embed';
 import {TopLevelSpec as VlSpec} from 'vega-lite';
-import {LocalLogger} from '../utils/logger';
-import {EDITOR_FOCUS, LAYOUT, Mode, NAVBAR, SIDEPANE, VEGA_LITE_START_SPEC, View} from './consts';
+import {EDITOR_FOCUS, LAYOUT, Mode, NAVBAR, SIDEPANE, VEGA_LITE_START_SPEC, View, GistPrivacy} from './consts';
 
 export interface State {
   isAuthenticated: boolean;
@@ -24,7 +23,7 @@ export interface State {
   gist: string;
   handle: string;
   hoverEnable: boolean | 'auto';
-  logLevel: string;
+  logLevel: number;
   lastPosition: number;
   logs: boolean;
   manualParse: boolean;
@@ -33,17 +32,22 @@ export interface State {
   navItem: string;
   sidePaneItem: string;
   parse: boolean;
+  private: GistPrivacy;
   profilePicUrl: string;
   renderer: Renderers;
   selectedExample: string;
   settings: boolean;
+  signals: any;
   tooltipEnable: boolean;
   vegaLiteSpec: VlSpec;
   vegaSpec: Spec;
   view: View;
-  warningsCount: number;
-  warningsLogger: LocalLogger;
+  errors: string[];
+  warns: string[];
+  infos: string[];
+  debugs: string[];
   themeName: string;
+  backgroundColor: string;
 }
 
 export const DEFAULT_STATE: State = {
@@ -66,23 +70,28 @@ export const DEFAULT_STATE: State = {
   hoverEnable: 'auto',
   isAuthenticated: false,
   lastPosition: 0,
-  logLevel: 'Warn',
+  logLevel: vega.Warn,
   logs: false,
   manualParse: false,
   mode: Mode.VegaLite,
   name: '',
   navItem: NAVBAR.Logs,
   parse: false,
+  private: GistPrivacy.ALL,
   profilePicUrl: '',
-  renderer: 'canvas',
+  renderer: 'svg',
   selectedExample: null,
   settings: false,
   sidePaneItem: SIDEPANE.Editor,
+  signals: {},
   themeName: 'custom',
   tooltipEnable: true,
   vegaLiteSpec: null,
   vegaSpec: {},
   view: null,
-  warningsCount: 0,
-  warningsLogger: new LocalLogger()
+  errors: [],
+  warns: [],
+  debugs: [],
+  infos: [],
+  backgroundColor: '#ffffff',
 };

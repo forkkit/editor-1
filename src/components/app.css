@@ -20,15 +20,23 @@
   --spacing-unit: 5px;
 
   /* Colors */
-  --light-color: #dedede;
-  --dark-color: #24292e;
-  --primary-color: #f5f5f5;
-  --primary-light-color: #ffffff;
-  --primary-dark-color: #d5d5d5;
-  --brand-color: #654ff0;
-  --dark-brand-color: rgb(92, 64, 141);
+  --white-color: #ffffff;
+  --light-gray-color: #f5f5f5;
+  --gray-color: #dedede;
+  --dark-gray-color: #c0c0c0;
+  --extra-dark-gray-color: #666;
+  --almost-black-color: #333;
+  --black-color: #000000;
+  --brand-color: #346596;
+  --dark-brand-color: #274c71;
   --error-color: #f44336;
   --warning-color: #ffc107;
+  --info-color: #399e39;
+  --strong-color: firebrick;
+  --url-color: rgb(6, 69, 173);
+  --box-shadow-color: rgba(0, 0, 0, 0.2);
+  --transparent-color: rgba(0, 0, 0, 0.08);
+  --transparent-bg-color: rgba(0, 0, 0, 0.8);
 }
 
 body,
@@ -102,7 +110,7 @@ html {
 }
 
 button,
-.button {
+.editor-button {
   cursor: pointer;
   padding: 0.3em 1em;
   border-style: solid;
@@ -118,23 +126,32 @@ button,
   font-size: 0.9em;
 }
 
+.editor-button {
+  user-select: none;
+  margin-right: 8px;
+}
+
 button:hover,
-.button:hover,
+.editor-button:hover,
 button:focus,
-.button:focus {
+.editor-button:focus {
   border-color: hsl(0, 0%, 70%);
 }
 
+.editor-button:focus {
+  outline: 0;
+}
+
 button:active,
-.button:active {
+.editor-button:active {
   border-color: hsl(0, 0%, 40%);
 }
 
-button.disabled,
-.button.disabled {
-  cursor: wait;
-  filter: grayscale(80%);
-  opacity: 0.8;
+button:disabled,
+.editor-button:disabled {
+  opacity: 0.7;
+  background-color: var(--light-gray-color);
+  color: var(--extra-dark-gray-color);
 }
 
 /* Scrollbar Styles */
@@ -180,4 +197,8 @@ p {
 
 a {
   color: #0451a5;
+}
+
+h2 {
+  margin: 26px 0 14px 0;
 }

@@ -13,10 +13,11 @@ export function mapStateToProps(state: State) {
     editorFocus: state.editorFocus,
     editorRef: state.editorRef,
     error: state.error,
+    errors: state.errors,
     logs: state.logs,
     navItem: state.navItem,
     settings: state.settings,
-    view: state.view
+    view: state.view,
   };
 }
 
@@ -27,13 +28,10 @@ export function mapDispatchToProps(dispatch: Dispatch<EditorActions.Action>) {
       setDecorations: EditorActions.setDecorations,
       showLogs: EditorActions.showLogs,
       toggleDebugPane: EditorActions.toggleDebugPane,
-      toggleNavbar: EditorActions.toggleNavbar
+      toggleNavbar: EditorActions.toggleNavbar,
     },
     dispatch
   );
 }
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(Renderer);
+export default connect(mapStateToProps, mapDispatchToProps)(Renderer);

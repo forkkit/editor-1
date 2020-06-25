@@ -4,9 +4,8 @@ import {connect} from 'react-redux';
 import {RouteComponentProps, withRouter} from 'react-router-dom';
 import SplitPane from 'react-split-pane';
 import {bindActionCreators, Dispatch} from 'redux';
-import {Spec} from 'vega';
 import {MessageData} from 'vega-embed';
-import {hash, mergeDeep} from 'vega-lite/build/src/util';
+import {hash} from 'vega-lite/build/src/util';
 import * as EditorActions from '../actions/editor';
 import {LAYOUT, Mode} from '../constants';
 import {NAME_TO_MODE, SIDEPANE, VEGA_LITE_START_SPEC, VEGA_START_SPEC} from '../constants/consts';
@@ -24,7 +23,7 @@ class App extends React.PureComponent<Props & {match: any; location: any; showEx
   public componentDidMount() {
     window.addEventListener(
       'message',
-      evt => {
+      (evt) => {
         const data = evt.data as MessageData;
         if (!data.spec) {
           return;
@@ -32,13 +31,11 @@ class App extends React.PureComponent<Props & {match: any; location: any; showEx
         // setting baseURL as event's origin
         this.props.setBaseUrl(evt.origin);
         console.info('[Vega-Editor] Received Message', evt.origin, data);
-        // send acknowledgement
-        const parsed = JSON.parse(data.spec) as Spec;
-        // merging config into the spec
+
         if (data.config) {
-          mergeDeep(parsed, {config: data.config as any});
+          this.props.setConfig(stringify(data.config));
         }
-        data.spec = stringify(parsed);
+
         if (data.spec || data.file) {
           // FIXME: remove any
           (evt as any).source.postMessage(true, '*');
@@ -88,7 +85,7 @@ class App extends React.PureComponent<Props & {match: any; location: any; showEx
     const name = parameter.example_name;
     this.props.setConfig(this.props.configEditorString);
     this.props.setSidePaneItem(SIDEPANE.Editor);
-    this.props.editorRef && this.props.editorRef.focus();
+    this.props.editorRef?.focus();
     switch (parameter.mode) {
       case 'vega': {
         const r = await fetch(`./spec/vega/${name}.vg.json`);
@@ -115,23 +112,30 @@ class App extends React.PureComponent<Props & {match: any; location: any; showEx
   }
 
   public async setGist(parameter: {id: string; filename: string; revision?: string}) {
-    await fetch(
-      `https://api.github.com/gists/${parameter.id}${parameter.revision !== undefined ? `/${parameter.revision}` : ''}`
-    )
-      .then(res => res.json())
-      .then(json => {
-        const contentObj = JSON.parse(json.files[parameter.filename].content);
-        if (!contentObj.hasOwnProperty('$schema')) {
-          this.props.setGistVegaLiteSpec('', json.files[parameter.filename].content);
-        } else {
-          const mode = contentObj.$schema.split('/').slice(-2)[0];
-          if (mode === Mode.Vega) {
-            this.props.setGistVegaSpec('', json.files[parameter.filename].content);
-          } else if (mode === Mode.VegaLite) {
-            this.props.setGistVegaLiteSpec('', json.files[parameter.filename].content);
-          }
+    try {
+      const gistResponse = await fetch(
+        `https://api.github.com/gists/${parameter.id}${
+          parameter.revision !== undefined ? `/${parameter.revision}` : ''
+        }`
+      );
+      const gistData = await gistResponse.json();
+      const contentResponse = await fetch(gistData.files[parameter.filename].raw_url); // fetch from raw_url to handle large files
+      const content = await contentResponse.text();
+      const contentObj = JSON.parse(content);
+
+      if (!('$schema' in contentObj)) {
+        this.props.setGistVegaLiteSpec('', content);
+      } else {
+        const mode = contentObj.$schema.split('/').slice(-2)[0];
+        if (mode === Mode.Vega) {
+          this.props.setGistVegaSpec('', content);
+        } else if (mode === Mode.VegaLite) {
+          this.props.setGistVegaLiteSpec('', content);
         }
-      });
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   public render() {
@@ -140,14 +144,14 @@ class App extends React.PureComponent<Props & {match: any; location: any; showEx
         <Header showExample={this.props.showExample} />
         <div
           style={{
-            height: `calc(100vh - ${LAYOUT.HeaderHeight}px)`
+            height: `calc(100vh - ${LAYOUT.HeaderHeight}px)`,
           }}
           className="main-panel"
         >
           <SplitPane
             split="vertical"
             minSize={300}
-            defaultSize={this.w * 0.4}
+            defaultSize={Math.min(this.w * 0.4, 800)}
             pane1Style={{display: 'flex'}}
             className="main-pane"
             pane2Style={{overflow: 'scroll'}}
@@ -168,7 +172,7 @@ function mapStateToProps(state: State) {
     configEditorString: state.configEditorString,
     editorRef: state.editorRef,
     settings: state.settings,
-    view: state.view
+    view: state.view,
   };
 }
 
@@ -186,15 +190,10 @@ function mapDispatchToProps(dispatch: Dispatch<EditorActions.Action>) {
       setVegaExample: EditorActions.setVegaExample,
       setVegaLiteExample: EditorActions.setVegaLiteExample,
       updateVegaLiteSpec: EditorActions.updateVegaLiteSpec,
-      updateVegaSpec: EditorActions.updateVegaSpec
+      updateVegaSpec: EditorActions.updateVegaSpec,
     },
     dispatch
   );
 }
 
-export default withRouter(
-  connect(
-    mapStateToProps,
-    mapDispatchToProps
-  )(App)
-);
+export default withRouter(connect(mapStateToProps, mapDispatchToProps)(App));

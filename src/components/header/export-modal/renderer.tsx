@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {Book, Code, Image, Map} from 'react-feather';
 import {withRouter} from 'react-router-dom';
-import {mergeDeep} from 'vega-lite/build/src/util';
+import {mergeConfig} from 'vega';
 import {mapStateToProps} from '.';
 import {Mode} from '../../../constants/consts';
 import './index.css';
@@ -11,6 +11,8 @@ type Props = ReturnType<typeof mapStateToProps>;
 interface State {
   downloadVegaJSON: boolean;
   includeConfig: boolean;
+  loadingPDF: boolean;
+  errorLoadingPdf: boolean;
 }
 
 class ExportModal extends React.PureComponent<Props, State> {
@@ -18,7 +20,9 @@ class ExportModal extends React.PureComponent<Props, State> {
     super(props);
     this.state = {
       downloadVegaJSON: false,
-      includeConfig: true
+      includeConfig: true,
+      loadingPDF: false,
+      errorLoadingPdf: false,
     };
   }
 
@@ -39,51 +43,47 @@ class ExportModal extends React.PureComponent<Props, State> {
   }
 
   public async downloadPDF() {
-    // show that we are working
-    const dlButton = this.refs.downloadPDF as any;
-    dlButton.classList.add('disabled');
+    this.setState({loadingPDF: true});
 
-    const svg = await this.props.view.toSVG();
-
-    const pdf = await fetch('https://api.cloudconvert.com/convert', {
-      body: JSON.stringify({
-        apikey: '7ZSKlPLjDB4RUaq5dvEvAQMG5GGwEeHH3qa7ixAr0KZtPxfwsKv81sc1SqFhlh7d',
-        file: svg,
-        filename: 'chart.svg',
-        input: 'raw',
-        inputformat: 'svg',
-        outputformat: 'pdf'
-      }),
+    const content = this.props.mode === Mode.Vega ? this.props.vegaSpec : this.props.vegaLiteSpec;
+    const body = {
+      spec: content,
+      baseURL: this.props.baseURL,
+    };
+    const pdf = await fetch('https://render-vega.now.sh', {
+      body: JSON.stringify(body),
       headers: {
-        'content-type': 'application/json; chartset=UTF-8'
+        'Content-Type': 'application/json',
+        Accept: 'application/pdf',
       },
-      method: 'post'
+      method: 'post',
+      mode: 'cors',
     });
-
+    if (pdf.status !== 200) {
+      this.setState({loadingPDF: false, errorLoadingPdf: true});
+      return;
+    }
+    this.setState({loadingPDF: false, errorLoadingPdf: false});
     const blob = await pdf.blob();
     const url = window.URL.createObjectURL(blob);
-
     const link = document.createElement('a');
     link.setAttribute('href', url);
     link.setAttribute('target', '_blank');
     link.setAttribute('download', `visualization.pdf`);
     link.dispatchEvent(new MouseEvent('click'));
-
-    dlButton.classList.remove('disabled');
   }
 
   public updateIncludeConfig(e) {
     this.setState({
-      includeConfig: e.target.checked
+      includeConfig: e.target.checked,
     });
   }
 
   public downloadJSON(event) {
     if (
-      event.target &&
-      (event.target.matches(`input`) ||
-        event.target.matches(`label`) ||
-        event.target.matches(`div.type-input-container`))
+      event.target?.matches(`input`) ||
+      event.target?.matches(`label`) ||
+      event.target?.matches(`div.type-input-container`)
     ) {
       return;
     }
@@ -99,11 +99,11 @@ class ExportModal extends React.PureComponent<Props, State> {
 
     if (this.state.includeConfig && this.props.config) {
       content = {...content};
-      content.config = mergeDeep({}, this.props.config, content.config);
+      content.config = mergeConfig({}, this.props.config, content.config);
     }
 
     const blob = new Blob([JSON.stringify(content, null, 2)], {
-      type: `application/json`
+      type: `application/json`,
     });
     const url = window.URL.createObjectURL(blob);
 
@@ -187,7 +187,7 @@ class ExportModal extends React.PureComponent<Props, State> {
                 </div>
               )}
             </div>
-            <button onClick={e => this.downloadJSON(e)}>Download</button>
+            <button onClick={(e) => this.downloadJSON(e)}>Download</button>
           </div>
           <div className="export-container">
             <div className="header-text">
@@ -203,17 +203,31 @@ class ExportModal extends React.PureComponent<Props, State> {
               Download
             </button>
           </div>
-          <div className="export-container" ref="downloadPDF">
+          <div className="export-container">
             <div className="header-text">
               <Book />
               <span>PDF</span>
             </div>
             <p>
-              <strong>Experimental!</strong>
               <br /> PDF is a vector format usually used for documents. This might take a few seconds. Please be
-              patient. Your chart is sent to an <a href="https://cloudconvert.com/">external service</a> for processing.
+              patient. Use absolute URLs to ensure that the data is loaded correctly. Your chart is sent to{' '}
+              <a href="https://render-vega.now.sh/" target="_blank" rel="noopener noreferrer">
+                render-vega.now.sh
+              </a>{' '}
+              for processing.
             </p>
-            <button onClick={() => this.downloadPDF()}>Download</button>
+            <button onClick={() => this.downloadPDF()} disabled={this.state.loadingPDF}>
+              {this.state.loadingPDF ? 'Downloading...' : 'Download'}
+            </button>
+            {this.state.errorLoadingPdf && (
+              <p style={{color: 'red'}}>
+                Render service cannot handle external data, please only use external datasets from{' '}
+                <a href="http://vega.github.io/" target="_blank" rel="noopener noreferrer">
+                  Vega dataset
+                </a>
+                .
+              </p>
+            )}
           </div>
         </div>
         <div className="user-notes">

@@ -6,7 +6,7 @@ import Renderer from './renderer';
 
 export function mapStateToProps(state: State) {
   return {
-    error: state.error
+    error: state.error,
   };
 }
 
@@ -14,13 +14,10 @@ export function mapDispatchToProps(dispatch: Dispatch<EditorActions.Action>) {
   return bindActionCreators(
     {
       logError: EditorActions.logError,
-      toggleDebugPane: EditorActions.toggleDebugPane
+      toggleDebugPane: EditorActions.toggleDebugPane,
     },
     dispatch
   );
 }
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(Renderer);
+export default connect(mapStateToProps, mapDispatchToProps)(Renderer);

@@ -18,7 +18,7 @@ type Props = StoreProps & OwnComponentProps;
 
 const initialState = {
   currentPage: 0,
-  selectedData: ''
+  selectedData: '',
 };
 
 type State = Readonly<typeof initialState>;
@@ -53,7 +53,7 @@ export default class DataViewer extends React.PureComponent<Props, State> {
       this.props.view.getState({
         data: vega.truthy,
         signals: vega.falsy,
-        recurse: true
+        recurse: true,
       }).data
     );
   }
@@ -64,7 +64,7 @@ export default class DataViewer extends React.PureComponent<Props, State> {
     if (datasets.length) {
       this.setState({
         currentPage: 0,
-        selectedData: datasets[datasets.length > 1 ? 1 : 0]
+        selectedData: datasets[datasets.length > 1 ? 1 : 0],
       });
     }
   }
@@ -146,7 +146,7 @@ export default class DataViewer extends React.PureComponent<Props, State> {
 
     const table = data.length ? (
       <Table
-        onClickHandler={header => this.props.onClickHandler(header)}
+        onClickHandler={(header) => this.props.onClickHandler(header)}
         header={Object.keys(data[0])}
         data={visibleData}
       />
@@ -155,25 +155,25 @@ export default class DataViewer extends React.PureComponent<Props, State> {
     );
 
     return (
-      <div className="data-viewer">
+      <>
         <div className="data-viewer-header">
           <Select
             className="data-dropdown"
             value={{label: selected}}
             onChange={this.handleChange}
-            options={datasets.map(d => ({
+            options={datasets.map((d) => ({
               label: d,
-              value: d
+              value: d,
             }))}
             clearable={false}
-            searchable={false}
+            searchable={true}
           />
           <div className="pagination-wrapper">{pagination}</div>
         </div>
         <div className="data-table">
           <ErrorBoundary>{table}</ErrorBoundary>
         </div>
-      </div>
+      </>
     );
   }
 }

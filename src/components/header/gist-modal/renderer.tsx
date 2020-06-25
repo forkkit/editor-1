@@ -1,15 +1,14 @@
 import * as React from 'react';
-import {AlertCircle, File, Lock} from 'react-feather';
+import {AlertCircle} from 'react-feather';
 import {RouteComponentProps, withRouter} from 'react-router-dom';
-import {mapDispatchToProps, mapStateToProps} from '.';
-import {BACKEND_URL, COOKIE_NAME, Mode} from '../../../constants';
-import getCookie from '../../../utils/getCookie';
+import {mapStateToProps} from '.';
+import GistSelectWidget from '../../gist-select-widget';
+import {Mode} from '../../../constants';
 import './index.css';
 
-type Props = ReturnType<typeof mapStateToProps> &
-  ReturnType<typeof mapDispatchToProps> & {
-    closePortal: () => void;
-  } & RouteComponentProps;
+type Props = ReturnType<typeof mapStateToProps> & {
+  closePortal: () => void;
+} & RouteComponentProps;
 
 interface State {
   gist: {
@@ -27,9 +26,6 @@ interface State {
   invalidRevision: boolean;
   invalidUrl: boolean;
   latestRevision: boolean;
-  loaded: boolean;
-  personalGist: any;
-  private: boolean;
   syntaxError: boolean;
 }
 
@@ -42,84 +38,48 @@ class GistModal extends React.PureComponent<Props, State> {
         filename: '',
         image: '',
         imageStyle: {
-          bottom: 0
+          bottom: 0,
         },
         revision: '',
         type: props.mode,
-        url: ''
+        url: '',
       },
       gistLoadClicked: false,
       invalidFilename: false,
       invalidRevision: false,
       invalidUrl: false,
       latestRevision: false,
-      loaded: false,
-      personalGist: [],
-      private: false,
-      syntaxError: false
+      syntaxError: false,
     };
-  }
-
-  public componentDidMount() {
-    const cookieValue = encodeURIComponent(getCookie(COOKIE_NAME));
-    fetch(`${BACKEND_URL}gists/user`, {
-      credentials: 'include',
-      headers: {
-        Cookie: `${COOKIE_NAME}=${cookieValue}`
-      },
-      method: 'get'
-    })
-      .then(res => {
-        return res.json();
-      })
-      .then(json => {
-        if (Array.isArray(json)) {
-          this.setState({
-            loaded: true,
-            personalGist: json
-          });
-        } else {
-          this.props.receiveCurrentUser(json.isAuthenticated);
-        }
-      })
-      .catch(err => {
-        // console.error(err);
-      });
-  }
-
-  public privacyToggle() {
-    this.setState({
-      private: !this.state.private
-    });
   }
 
   public updateGist(gist) {
     this.setState({
       gist: {
         ...this.state.gist,
-        ...gist
-      }
+        ...gist,
+      },
     });
   }
 
   public updateGistUrl(event) {
     this.updateGist({url: event.currentTarget.value});
     this.setState({
-      invalidUrl: false
+      invalidUrl: false,
     });
   }
 
   public updateGistRevision(event) {
     this.updateGist({revision: event.currentTarget.value});
     this.setState({
-      invalidRevision: false
+      invalidRevision: false,
     });
   }
 
   public updateGistFile(event) {
     this.updateGist({filename: event.currentTarget.value});
     this.setState({
-      invalidFilename: false
+      invalidFilename: false,
     });
   }
 
@@ -130,8 +90,8 @@ class GistModal extends React.PureComponent<Props, State> {
       gist: {
         ...this.state.gist,
         filename: this.state.gist.filename.trim(),
-        revision: this.state.gist.revision.trim().toLowerCase()
-      }
+        revision: this.state.gist.revision.trim().toLowerCase(),
+      },
     });
 
     if (url.length === 0) {
@@ -139,167 +99,120 @@ class GistModal extends React.PureComponent<Props, State> {
       return;
     }
     this.setState({
-      gistLoadClicked: true
+      gistLoadClicked: true,
     });
 
-    let gistUrl;
+    let gistUrl: URL;
+
     if (url.match(/gist.githubusercontent.com/)) {
       gistUrl = new URL(url, 'https://gist.githubusercontent.com');
-      const [, , , revision, filename] = gistUrl.pathname.split('/').slice(1);
+      const [revision, filename] = gistUrl.pathname.split('/').slice(4);
       this.setState({
         gist: {
           ...this.state.gist,
           filename,
-          revision
-        }
+          revision,
+        },
       });
     } else if (url.match(/gist.github.com/)) {
       gistUrl = new URL(url, 'https://gist.github.com');
     }
-    const [_, gistId] = gistUrl.pathname.split('/').slice(1);
-    await fetch(`https://api.github.com/gists/${gistId}/commits`)
-      .then(res => {
+    const gistId = gistUrl.pathname.split('/')[2];
+
+    try {
+      const gistCommitsResponse = await fetch(`https://api.github.com/gists/${gistId}/commits`);
+      this.setState({
+        invalidUrl: !gistCommitsResponse.ok,
+      });
+      const gistCommits = await gistCommitsResponse.json();
+      if (!this.state.gist.revision && !this.state.invalidUrl) {
         this.setState({
-          invalidUrl: !res.ok
+          gist: {
+            ...this.state.gist,
+            revision: gistCommits[0].version,
+          },
         });
-        return res.json();
-      })
-      .then(json => {
-        if (!this.state.gist.revision && !this.state.invalidUrl) {
-          this.setState({
-            gist: {
-              ...this.state.gist,
-              revision: json[0].version
-            }
-          });
-        } else if (this.state.invalidUrl) {
-          this.setState({
-            gistLoadClicked: false
-          });
-          return Promise.reject('Invalid Gist URL');
-        }
-        if (json[0].version === this.state.gist.revision) {
-          this.setState({
-            latestRevision: true
-          });
-        }
-        return fetch(`https://api.github.com/gists/${gistId}/${this.state.gist.revision}`);
-      })
-      .then(res => {
+      } else if (this.state.invalidUrl) {
         this.setState({
-          invalidRevision: !res.ok
+          gistLoadClicked: false,
         });
-        return res.json();
-      })
-      .then(json => {
-        if (this.state.invalidRevision) {
-          this.setState({
-            gistLoadClicked: false
-          });
-          return Promise.reject('Invalid Revision');
-        } else if (!this.state.invalidRevision && this.state.gist.filename === '') {
-          const jsonFiles = Object.keys(json.files).filter(file => {
-            if (file.split('.').slice(-1)[0] === 'json') {
-              return true;
-            }
-          });
-          if (jsonFiles.length === 0) {
-            this.setState(
-              {
-                gistLoadClicked: false,
-                invalidUrl: true
-              },
-              () => {
-                return Promise.reject('No JSON file exists in the gist');
-              }
-            );
-          } else {
-            this.setState(
-              {
-                gist: {
-                  ...this.state.gist,
-                  filename: jsonFiles[0]
-                }
-              },
-              () => {
-                const {revision, filename} = this.state.gist;
-                JSON.parse(json.files[jsonFiles[0]].content);
-                if (this.state.latestRevision) {
-                  this.props.history.push(`/gist/${gistId}/${filename}`);
-                } else {
-                  this.props.history.push(`/gist/${gistId}/${revision}/${filename}`);
-                }
-                closePortal();
-              }
-            );
+        throw new Error('Invalid Gist URL');
+      }
+      if (gistCommits[0].version === this.state.gist.revision) {
+        this.setState({
+          latestRevision: true,
+        });
+      }
+      const gistSummaryResponse = await fetch(`https://api.github.com/gists/${gistId}/${this.state.gist.revision}`);
+      this.setState({
+        invalidRevision: !gistSummaryResponse.ok,
+      });
+      const gistSummary = await gistSummaryResponse.json();
+
+      if (this.state.invalidRevision) {
+        this.setState({
+          gistLoadClicked: false,
+        });
+        throw new Error('Invalid Revision');
+      } else if (!this.state.invalidRevision && this.state.gist.filename === '') {
+        const jsonFiles = Object.keys(gistSummary.files).filter((file) => {
+          if (file.split('.').slice(-1)[0] === 'json') {
+            return true;
           }
-        } else {
-          if (json.files[this.state.gist.filename] === undefined) {
-            this.setState({
-              gistLoadClicked: false,
-              invalidFilename: true
-            });
-            return Promise.reject('Invalid file name');
-          } else {
-            const {revision, filename} = this.state.gist;
-            JSON.parse(json.files[filename].content);
-            if (this.state.latestRevision) {
-              this.props.history.push(`/gist/${gistId}/${filename}`);
-            } else {
-              this.props.history.push(`/gist/${gistId}/${revision}/${filename}`);
-            }
-            closePortal();
-          }
-        }
-      })
-      .catch(error => {
-        if (error instanceof SyntaxError) {
+        });
+        if (jsonFiles.length === 0) {
           this.setState({
             gistLoadClicked: false,
-            syntaxError: true
+            invalidUrl: true,
           });
+          throw new Error('No JSON file exists in the gist');
+        } else {
+          this.setState(
+            {
+              gist: {
+                ...this.state.gist,
+                filename: jsonFiles[0],
+              },
+            },
+            () => {
+              const {revision, filename} = this.state.gist;
+              JSON.parse(gistSummary.files[jsonFiles[0]].content);
+              if (this.state.latestRevision) {
+                this.props.history.push(`/gist/${gistId}/${filename}`);
+              } else {
+                this.props.history.push(`/gist/${gistId}/${revision}/${filename}`);
+              }
+              closePortal();
+            }
+          );
         }
-      });
-  }
+      } else {
+        if (gistSummary.files[this.state.gist.filename] === undefined) {
+          this.setState({
+            gistLoadClicked: false,
+            invalidFilename: true,
+          });
+          throw new Error('Invalid file name');
+        }
 
-  public componentWillReceiveProps(nextProps) {
-    this.setState({
-      gist: {
-        filename: '',
-        image: '',
-        imageStyle: {
-          bottom: 0
-        },
-        revision: '',
-        type: nextProps.mode,
-        url: ''
+        const rawResponse = await fetch(gistSummary.files[this.state.gist.filename].raw_url); // fetch from raw_url to handle large files
+        await rawResponse.json(); // check if the loaded file is a JSON
+
+        const {revision, filename} = this.state.gist;
+        if (this.state.latestRevision) {
+          this.props.history.push(`/gist/${gistId}/${filename}`);
+        } else {
+          this.props.history.push(`/gist/${gistId}/${revision}/${filename}`);
+        }
+        closePortal();
       }
-    });
-    if (nextProps.isAuthenticated) {
-      const cookieValue = encodeURIComponent(getCookie(COOKIE_NAME));
-      fetch(`${BACKEND_URL}gists/user`, {
-        credentials: 'include',
-        headers: {
-          Cookie: `${COOKIE_NAME}=${cookieValue}`
-        },
-        method: 'get'
-      })
-        .then(res => {
-          return res.json();
-        })
-        .then(json => {
-          if (Array.isArray(json)) {
-            this.setState({
-              loaded: true,
-              personalGist: json
-            });
-          } else {
-            this.props.receiveCurrentUser(json.isAuthenticated);
-          }
-        })
-        .catch(err => {
-          // console.error(err);
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        this.setState({
+          gistLoadClicked: false,
+          syntaxError: true,
         });
+      }
     }
   }
 
@@ -311,15 +224,15 @@ class GistModal extends React.PureComponent<Props, State> {
         image,
         imageStyle: {
           ...this.state.gist.imageStyle,
-          bottom: 0
+          bottom: 0,
         },
         revision: '',
-        url: `https://gist.github.com/${this.props.handle}/${id}`
+        url: `https://gist.github.com/${this.props.handle}/${id}`,
       },
       invalidFilename: false,
       invalidRevision: false,
       invalidUrl: false,
-      syntaxError: false
+      syntaxError: false,
     });
   }
 
@@ -330,9 +243,9 @@ class GistModal extends React.PureComponent<Props, State> {
         ...this.state.gist,
         imageStyle: {
           ...this.state.gist.imageStyle,
-          bottom: imageHeight > 100 ? imageHeight - 100 : 0
-        }
-      }
+          bottom: imageHeight > 100 ? imageHeight - 100 : 0,
+        },
+      },
     });
   }
 
@@ -342,93 +255,33 @@ class GistModal extends React.PureComponent<Props, State> {
         ...this.state.gist,
         imageStyle: {
           ...this.state.gist.imageStyle,
-          bottom: 0
-        }
-      }
+          bottom: 0,
+        },
+      },
     });
   }
 
   public render() {
-    const githubLink = (
-      /* eslint-disable-next-line react/jsx-no-target-blank */
-      <a href={`${BACKEND_URL}auth/github`} target="_blank">
-        Login with GitHub
-      </a>
-    );
-
     return (
       <div>
         <h1>
           Load{' '}
           <a href="https://gist.github.com/" target="_blank" rel="noopener noreferrer">
-            Github Gist
+            GitHub Gist
           </a>
         </h1>
         <div className="gist-split">
           <div className="personal-gist">
             <h3>Your gists</h3>
-            {this.props.isAuthenticated ? (
-              this.state.loaded ? (
-                <>
-                  {this.state.personalGist.length > 0 ? (
-                    <>
-                      <div className="privacy-toggle">
-                        <input
-                          type="checkbox"
-                          name="privacy"
-                          id="privacy"
-                          checked={this.state.private}
-                          onChange={this.privacyToggle.bind(this)}
-                        />
-                        <label htmlFor="privacy">Show private gists</label>
-                      </div>
-                      {this.state.personalGist
-                        .filter(gist => gist.isPublic || this.state.private)
-                        .map(gist => (
-                          <div key={gist.name} className="gist-container">
-                            <div className="personal-gist-description">
-                              {gist.isPublic ? (
-                                <File width="14" height="14" />
-                              ) : (
-                                <Lock width="14" height="14" fill="#FDD300" />
-                              )}
-                              <span className={`text ${gist.title ? '' : 'play-down'}`}>
-                                {gist.title ? gist.title : 'No description provided'}
-                              </span>
-                            </div>
-                            <div className="personal-gist-files">
-                              {gist.spec.map((spec, index) => (
-                                <div key={index} className="file">
-                                  <div className="arrow"></div>
-                                  <div
-                                    className="filename"
-                                    key={spec.name}
-                                    onClick={() => this.preview(gist.name, spec.name, spec.previewUrl)}
-                                  >
-                                    {spec.name}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                    </>
-                  ) : (
-                    <>You have no Vega or Vega-Lite compatible gists.</>
-                  )}
-                </>
-              ) : (
-                <div className="loader-container">
-                  <span>Loading your GISTS...</span>
-                </div>
-              )
-            ) : (
-              <span>{githubLink} to see all of your personal gist.</span>
-            )}
+            <p>
+              To load a gist, select it in the list below or specify its details on the right. View all your Gists on{' '}
+              <a href={`https://gist.github.com/${this.props.handle}`}>GitHub</a>.
+            </p>
+            <GistSelectWidget selectGist={this.preview.bind(this)} />
           </div>
           <div className="load-gist">
             <h3>Load gists</h3>
-            <form ref={form => (this.refGistForm = form)}>
+            <form ref={(form) => (this.refGistForm = form)}>
               <div className="gist-input-container">
                 <label>
                   Gist URL
@@ -437,15 +290,15 @@ class GistModal extends React.PureComponent<Props, State> {
                       Example:{' '}
                       <span
                         className="gist-url"
-                        onClick={e =>
+                        onClick={(e) =>
                           this.setState({
                             gist: {
                               ...this.state.gist,
                               filename: '',
                               image: '',
                               revision: '',
-                              url: 'https://gist.github.com/domoritz/455e1c7872c4b38a58b90df0c3d7b1b9'
-                            }
+                              url: 'https://gist.github.com/domoritz/455e1c7872c4b38a58b90df0c3d7b1b9',
+                            },
                           })
                         }
                       >
@@ -467,7 +320,7 @@ class GistModal extends React.PureComponent<Props, State> {
               <div className="gist-optional">
                 <div className="gist-input-container gist-optional-input-container">
                   <label>
-                    Revision (<small>optional</small>)
+                    Revision (optional)
                     <input
                       className="gist-input"
                       type="text"
@@ -482,7 +335,7 @@ class GistModal extends React.PureComponent<Props, State> {
                 </div>
                 <div className="gist-input-container gist-optional-input-container">
                   <label>
-                    Filename (<small>optional</small>)
+                    Filename (optional)
                     <input
                       className="gist-input"
                       type="text"
@@ -511,7 +364,7 @@ class GistModal extends React.PureComponent<Props, State> {
                           onMouseOver={this.slideImage.bind(this)}
                           onMouseOut={this.slideImageBack.bind(this)}
                           style={{
-                            transform: `translateY(-${this.state.gist.imageStyle.bottom}px)`
+                            transform: `translateY(-${this.state.gist.imageStyle.bottom}px)`,
                           }}
                         />
                       </div>

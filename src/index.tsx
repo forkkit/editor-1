@@ -1,10 +1,9 @@
 import * as React from 'react';
 import ReactDOM from 'react-dom';
-import * as ReactGA from 'react-ga';
 import {Provider} from 'react-redux';
 import {HashRouter} from 'react-router-dom';
 import * as vega from 'vega';
-import * as vl from 'vega-lite';
+import * as vegaLite from 'vega-lite';
 import setupMonaco from './utils/monaco';
 
 import AppShell from './components/app-shell';
@@ -15,7 +14,7 @@ declare global {
     VEGA_DEBUG: {
       vega?: typeof vega;
       view?: vega.View;
-      vl?: typeof vl;
+      vegaLite?: typeof vegaLite;
       VEGA_VERSION?: string;
       VEGA_LITE_VERSION?: string;
     };
@@ -25,28 +24,20 @@ declare global {
 window.VEGA_DEBUG = window.VEGA_DEBUG || {};
 window.VEGA_DEBUG = {};
 window.VEGA_DEBUG.vega = vega;
-window.VEGA_DEBUG.vl = vl;
+window.VEGA_DEBUG.vegaLite = vegaLite;
 window.VEGA_DEBUG.VEGA_VERSION = vega.version;
-window.VEGA_DEBUG.VEGA_LITE_VERSION = vl.version;
-
-// Google analytics
-ReactGA.initialize('UA-44428446-7');
-
-function logPageView() {
-  ReactGA.set({page: window.location.pathname + window.location.search});
-  ReactGA.pageview(window.location.pathname + window.location.search);
-}
+window.VEGA_DEBUG.VEGA_LITE_VERSION = vegaLite.version;
 
 setupMonaco();
 
-const store = configureStore();
+export const store = configureStore();
 
 // Now that redux and react-router have been configured, we can render the
 // React application to the DOM!
 ReactDOM.render(
   <Provider store={store}>
     <HashRouter>
-      <AppShell logPageView={logPageView} />
+      <AppShell />
     </HashRouter>
   </Provider>,
   document.getElementById('root')
